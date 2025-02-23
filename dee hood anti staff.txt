@@ -1,0 +1,168 @@
+-- Services
+local Players = game:GetService("Players")
+local GroupId = 35471284 -- Replace with your group ID
+local StarterGui = game:GetService("StarterGui")
+local UIS = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+
+-- GUI setup
+local ScreenGui = Instance.new("ScreenGui")
+local Frame = Instance.new("Frame")
+local PlayerList = Instance.new("Frame")
+local TitleLabel = Instance.new("TextLabel")
+local ToggleButton = Instance.new("TextButton")
+local ToggleGuiButton = Instance.new("TextButton")
+
+ScreenGui.Name = "GroupNotifier"
+ScreenGui.Parent = game.CoreGui
+Frame.Size = UDim2.new(0, 250, 0, 400)
+Frame.Position = UDim2.new(0, 0, 0, 100)
+Frame.BackgroundTransparency = 0.3
+Frame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+Frame.BorderSizePixel = 0
+Frame.Visible = false
+Frame.Draggable = true -- Make the frame draggable
+Frame.Parent = ScreenGui
+
+TitleLabel.Size = UDim2.new(0, 250, 0, 50)
+TitleLabel.Position = UDim2.new(0, 0, 0, 0)
+TitleLabel.Text = "MODS IN THE SERVER"
+TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+TitleLabel.BackgroundTransparency = 1
+TitleLabel.Font = Enum.Font.SourceSansBold
+TitleLabel.TextSize = 24
+TitleLabel.Parent = Frame
+
+PlayerList.Size = UDim2.new(0, 250, 0, 300)
+PlayerList.Position = UDim2.new(0, 0, 0, 50)
+PlayerList.BackgroundTransparency = 1
+PlayerList.Parent = Frame
+
+ToggleButton.Size = UDim2.new(0, 250, 0, 50)
+ToggleButton.Position = UDim2.new(0, 0, 0, 350)
+ToggleButton.Text = "Kick Off"
+ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleButton.Font = Enum.Font.SourceSansBold
+ToggleButton.TextSize = 18
+ToggleButton.Parent = Frame
+
+ToggleGuiButton.Size = UDim2.new(0, 50, 0, 50)
+ToggleGuiButton.Position = UDim2.new(0, 0, 0, 0)
+ToggleGuiButton.Text = "Anti staff"
+ToggleGuiButton.BackgroundColor3 = Color3.fromRGB(255, 255, 0) -- Yellow background
+ToggleGuiButton.Font = Enum.Font.SourceSansBold
+ToggleGuiButton.TextSize = 14
+ToggleGuiButton.Draggable = true -- Make the button draggable
+ToggleGuiButton.Parent = ScreenGui
+
+local kickToggle = true
+
+-- Function to update player list and kick if toggle is on
+local function updatePlayerList()
+    PlayerList:ClearAllChildren()
+    local yPos = 0
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player:IsInGroup(GroupId) then
+            local playerImage = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. player.UserId .. "&width=150&height=150&format=png"
+            local imageLabel = Instance.new("ImageLabel")
+            imageLabel.Size = UDim2.new(0, 50, 0, 50)
+            imageLabel.Position = UDim2.new(0, 5, 0, yPos + 5)
+            imageLabel.Image = playerImage
+            imageLabel.BackgroundTransparency = 1
+            imageLabel.Parent = PlayerList
+
+            local nameLabel = Instance.new("TextLabel")
+            nameLabel.Size = UDim2.new(0, 185, 0, 50)
+            nameLabel.Position = UDim2.new(0, 60, 0, yPos + 5)
+            nameLabel.Text = player.Name
+            nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+            nameLabel.BackgroundTransparency = 1
+            nameLabel.Font = Enum.Font.SourceSans
+            nameLabel.TextSize = 18
+            nameLabel.Parent = PlayerList
+
+            yPos = yPos + 60
+
+            -- Kick the local player if the toggle is on
+            if kickToggle then
+                LocalPlayer:Kick("Vascal just save your life A mod joined this game. We kicked you for your own safety, Please join another server.")
+            end
+        end
+    end
+end
+
+-- Function to notify and update when player joins
+local function onPlayerAdded(player)
+    if player:IsInGroup(GroupId) then
+        StarterGui:SetCore("SendNotification", {
+            Title = "MOD ALERT",
+            Text = player.Name .. " JUST JOINED YOUR GAME! HE'S A MOD! LEAVE FOR YOUR OWN SAFETY!",
+            Duration = 5,
+        })
+        updatePlayerList()
+    end
+end
+
+-- Connecting functions
+Players.PlayerAdded:Connect(onPlayerAdded)
+Players.PlayerRemoving:Connect(updatePlayerList)
+
+-- Toggle GUI with the small button
+ToggleGuiButton.MouseButton1Click:Connect(function()
+    Frame.Visible = not Frame.Visible
+end)
+
+-- Toggle Kick button functionality
+ToggleButton.MouseButton1Click:Connect(function()
+    kickToggle = not kickToggle
+    ToggleButton.Text = kickToggle and "Kick On" or "Kick Off"
+
+    -- Check for group members immediately when toggled on
+    if kickToggle then
+        updatePlayerList()
+    end
+end)
+
+-- Rainbow effect for Frame
+local function rainbowFrameEffect(frame)
+    task.spawn(function()
+        while frame and frame.Parent do
+            for i = 0, 1, 0.002 do -- Smooth transition
+                if frame and frame.Parent then
+                    frame.BackgroundColor3 = Color3.fromHSV(i, 1, 1)
+                else
+                    return -- Stop if the frame is removed
+                end
+                task.wait(0.01) -- Faster color change
+            end
+        end
+    end)
+end
+
+-- Rainbow effect for ToggleGuiButton text
+local function rainbowTextEffect(textLabel)
+    task.spawn(function()
+        while textLabel and textLabel.Parent do
+            for i = 0, 1, 0.002 do -- Smooth transition
+                if textLabel and textLabel.Parent then
+                    textLabel.TextColor3 = Color3.fromHSV(i, 1, 1)
+                else
+                    return -- Stop if the label is removed
+                end
+                task.wait(0.01) -- Faster color change
+            end
+        end
+    end)
+end
+
+-- Apply effects
+rainbowFrameEffect(Frame) -- Makes the Frame rainbow
+rainbowTextEffect(ToggleGuiButton) -- Makes Toggle GUI text rainbow
+
+-- Initial update
+updatePlayerList()
+
+-- For initial players in the server
+for _, player in ipairs(Players:GetPlayers()) do
+    onPlayerAdded(player)
+end
