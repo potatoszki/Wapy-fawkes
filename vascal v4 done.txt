@@ -18,6 +18,21 @@ local XPrediction = 20
 local YPrediction = 20
 local AutoAirEnabled = false
 
+if game.CoreGui:FindFirstChild("Vascal") then
+	game.CoreGui.Vascal:Destroy()
+end
+
+if game.CoreGui:FindFirstChild("Vascal_Notifications") then
+	game.CoreGui.Vascal_Notifications:Destroy()
+end
+
+if game.Players.LocalPlayer:FindFirstChild("PlayerGui") then
+	local pg = game.Players.LocalPlayer.PlayerGui
+	if pg:FindFirstChild("SimpleHUD") then
+		pg.SimpleHUD:Destroy()
+	end
+end
+
 -- NOTIFICATION SYSTEM
 local TweenService = game:GetService("TweenService")
 
@@ -490,28 +505,45 @@ end)
 
 local RunService = game:GetService("RunService")
 
-local lastAirShot = 0
-local cooldown = 0.7 -- adjust timing
+local lastTrigger = 0
+local cooldown = 0.35
 
 RunService.Heartbeat:Connect(function()
-    if not AutoAirEnabled then return end
-    if not enemy or not enemy.Parent then return end
+	if not AutoAirEnabled then return end
+	if not CamlockState then return end
+	if not enemy or not enemy.Parent then return end
 
-    local hum = enemy.Parent:FindFirstChild("Humanoid")
-    local tool = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Tool")
+	local character = enemy:FindFirstAncestorOfClass("Model")
+	if not character then return end
 
-    if not hum or not tool then return end
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if not root then return end
 
-    local state = hum:GetState()
+	-- 🚀 detect REAL jump (strong upward motion)
+	if root.Velocity.Y > 25 then
+		if tick() - lastTrigger > cooldown then
+			lastTrigger = tick()
 
-    local inAir = (state == Enum.HumanoidStateType.Jumping 
-                or state == Enum.HumanoidStateType.Freefall)
+			-- ⏱ small delay like veerve (THIS IS THE MAGIC)
+			task.wait(0.12)
 
-    -- ONLY allow 1 shot per air event + cooldown
-    if inAir and (tick() - lastAirShot > cooldown) then
-        lastAirShot = tick()
-        tool:Activate()
-    end
+			-- 🎯 slight prediction (your style)
+			local predicted = root.Position + (root.Velocity * 0.10)
+
+			workspace.CurrentCamera.CFrame = CFrame.new(
+				workspace.CurrentCamera.CFrame.Position,
+				predicted
+			)
+
+			-- 💥 shoot
+			local tool = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Tool")
+			if tool then
+				tool:Activate()
+			else
+				mouse1click()
+			end
+		end
+	end
 end)
 
 -- PC support: Keybind for toggling Camlock and Auto Air
@@ -812,8 +844,11 @@ HitSound.Parent = SoundService
 
 			if hum.Health < lastHP[hum] then
 			HitSound:Play()
-				for _,v in ipairs(char:GetDescendants()) do
-					if v:IsA("BasePart") then
+				local count = 0
+for _,v in ipairs(char:GetDescendants()) do
+    if v:IsA("BasePart") then
+        count += 1
+        if count > 5 then break end -- LIMIT PARTS
 
 						local ghost = Instance.new("Part")
 						ghost.Size = v.Size
@@ -883,9 +918,6 @@ end
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Parent = game:GetService("CoreGui")
 ScreenGui.ResetOnSpawn = false
-
-local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
 
 -- =========================
 -- STATES
@@ -1056,9 +1088,6 @@ local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
 local char = player.Character or player.CharacterAdded:Wait()
 local hrp = char:WaitForChild("HumanoidRootPart")
-
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Parent = game.CoreGui
 end)
 
 loadstring(game:HttpGet("https://pastebin.com/raw/9qmED6EV",true))()
