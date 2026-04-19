@@ -188,7 +188,7 @@ end
 
 local function CreateResolverTool()
 	local tool = Instance.new("Tool")
-	tool.Name = "Resolver"
+	tool.Name = "Vascal Resolver😈"
 	tool.RequiresHandle = false
 	tool.Parent = LocalPlayer.Backpack
 
