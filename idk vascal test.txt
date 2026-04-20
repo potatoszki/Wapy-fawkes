@@ -324,17 +324,25 @@ function FindNearestNPC()
 
     for _, obj in ipairs(workspace:GetDescendants()) do
         if obj:IsA("Model") and not Players:GetPlayerFromCharacter(obj) then
-            local hrp = obj:FindFirstChild("HumanoidRootPart")
-            local hum = obj:FindFirstChild("Humanoid")
+            
+            local hum = obj:FindFirstChildOfClass("Humanoid")
+            if hum and hum.Health > 0 then
 
-            if hrp and hum and hum.Health > 0 then
-                local pos, visible = camera:WorldToViewportPoint(hrp.Position)
+                -- 🔥 SUPPORT ALL RIG TYPES
+                local part = obj:FindFirstChild("HumanoidRootPart")
+                    or obj:FindFirstChild("UpperTorso")
+                    or obj:FindFirstChild("Torso")
+                    or obj:FindFirstChildWhichIsA("BasePart")
 
-                if visible then
-                    local dist = (center - Vector2.new(pos.X, pos.Y)).Magnitude
-                    if dist < ClosestDistance then
-                        ClosestDistance = dist
-                        ClosestNPC = hrp
+                if part then
+                    local pos, visible = camera:WorldToViewportPoint(part.Position)
+
+                    if visible then
+                        local dist = (center - Vector2.new(pos.X, pos.Y)).Magnitude
+                        if dist < ClosestDistance then
+                            ClosestDistance = dist
+                            ClosestNPC = part
+                        end
                     end
                 end
             end
