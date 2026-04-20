@@ -538,12 +538,8 @@ RunService.Heartbeat:Connect(function()
 			-- 💥 shoot
 			local tool = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Tool")
 			if tool then
-				tool:Activate()
-			else
-				mouse1click()
-			end
-		end
-	end
+	tool:Activate()
+   end
 end)
 
 -- PC support: Keybind for toggling Camlock and Auto Air
