@@ -159,6 +159,221 @@ local button = Instance.new("TextButton")
 button.Size = UDim2.new(0, 70, 0, 40) -- smaller + wider for text
 button.Position = UDim2.new(0.85, 0, 0.5, 0)
 button.AnchorPoint = Vector2.new(0.5, 0.5)
+-- MACRO GUI (clean version)
+local enabled = false
+local running = false
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+
+-- AUTO STOP MACRO WHEN TOOL EQUIPPED (REAL FIX)
+local function hookToolDetect()
+
+	local function stopMacro()
+		enabled = false
+
+		if faceConn then
+			faceConn:Disconnect()
+			faceConn = nil
+		end
+
+		if button then
+			button.Text = "VASCAL M OFF"
+		end
+	end
+
+	local function watch()
+		task.spawn(function()
+			while player.Character do
+				task.wait(0.15)
+
+				local char = player.Character
+				local backpack = player:FindFirstChild("Backpack")
+
+				if not char or not backpack then
+					continue
+				end
+
+				-- check character (equipped tool)
+				for _, v in pairs(char:GetChildren()) do
+					if v:IsA("Tool") then
+						stopMacro()
+						return
+					end
+				end
+
+				-- check backpack (just in case instant swap games)
+				for _, v in pairs(backpack:GetChildren()) do
+					if v:IsA("Tool") and v.Parent == char then
+						stopMacro()
+						return
+					end
+				end
+			end
+		end)
+	end
+
+	player.CharacterAdded:Connect(function()
+		task.wait(1)
+		watch()
+	end)
+
+	if player.Character then
+		watch()
+	end
+end
+
+hookToolDetect()
+
+local function macroLoop()
+	if running then return end
+	running = true
+
+	task.spawn(function()
+		while running do
+			if not enabled then
+				task.wait(0.2)
+				continue
+			end
+
+			local char = player.Character
+			local hum = char and char:FindFirstChildOfClass("Humanoid")
+
+			if not char or not hum then
+				task.wait(0.2)
+				continue
+			end
+
+			-- TOOL ACTION
+			local tool = getTool()
+			if tool then
+				hum:EquipTool(tool)
+			end
+
+			task.wait(0.15)
+
+			-- EMOTE
+			pcall(function()
+				playEmote()
+			end)
+
+			task.wait(0.5)
+
+			-- UNEQUIP
+			if hum then
+				hum:UnequipTools()
+			end
+
+			task.wait(0.4)
+		end
+	end)
+end
+
+-- SETTINGS
+local EMOTE_ID = 15610015346
+local EMOTE_NAME = "Yungblud Happier Jump"
+
+local enabled = false
+local faceConn = nil
+
+-- get any tool in backpack
+local function getTool()
+	local backpack = player:FindFirstChild("Backpack")
+	if not backpack then return nil end
+
+	for _, v in pairs(backpack:GetChildren()) do
+		if v:IsA("Tool") then
+			-- must have Handle (real weapon/tools usually do)
+			local hasHandle = v:FindFirstChild("Handle")
+
+			-- must NOT be your resolver tool
+			if hasHandle and v.Name ~= "Resolver" then
+				return v
+			end
+		end
+	end
+
+	return nil
+end
+
+-- play emote (fixes “only works once” issue)
+local function playEmote()
+local char = player.Character
+if not char then return end
+
+local hum = char:FindFirstChildOfClass("Humanoid")  
+if not hum then return end  
+
+if hum.RigType ~= Enum.HumanoidRigType.R15 then return end  
+
+local desc = hum:FindFirstChildOfClass("HumanoidDescription")  
+if not desc then  
+	desc = Instance.new("HumanoidDescription")  
+	desc.Parent = hum  
+end  
+
+pcall(function()  
+	desc:AddEmote(EMOTE_NAME, EMOTE_ID)  
+end)  
+
+task.wait(0.1)  
+
+pcall(function()  
+	hum:PlayEmote(EMOTE_NAME)  
+end)
+
+end
+
+-- equip + unequip tool
+local function toolCycle()
+local char = player.Character
+if not char then return end
+
+local hum = char:FindFirstChildOfClass("Humanoid")  
+if not hum then return end  
+
+local tool = getTool()  
+if not tool then return end  
+
+hum:EquipTool(tool)  
+task.wait(0.15)  
+hum:UnequipTools()
+
+end
+
+-- face forward loop
+local function faceForward()
+local char = player.Character
+if not char then return end
+
+local hrp = char:FindFirstChild("HumanoidRootPart")  
+local cam = workspace.CurrentCamera  
+if not hrp or not cam then return end  
+
+local look = cam.CFrame.LookVector  
+local flat = Vector3.new(look.X, 0, look.Z)  
+
+if flat.Magnitude > 0 then  
+	flat = flat.Unit  
+	hrp.CFrame = CFrame.new(hrp.Position, hrp.Position + flat)  
+end
+
+end
+
+-- GUI
+
+-- UI (clean floating orb style - no icon)
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "MacroGui"
+gui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+gui.ResetOnSpawn = false
+
+local button = Instance.new("TextButton")
+button.Size = UDim2.new(0, 70, 0, 40) -- smaller + wider for text
+button.Position = UDim2.new(0.85, 0, 0.5, 0)
+button.AnchorPoint = Vector2.new(0.5, 0.5)
 
 button.Text = "VASCAL OFF"
 button.Font = Enum.Font.GothamBold
@@ -255,6 +470,5 @@ button.MouseButton1Click:Connect(function()
 			faceConn:Disconnect()
 			faceConn = nil
 		end
-
 	end
 end)
