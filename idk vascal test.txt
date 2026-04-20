@@ -211,31 +211,57 @@ CreateResolverTool()
 end)
 
 function FindNearestEnemy()
-    local ClosestDistance, ClosestPlayer = math.huge, nil
-    local CenterPosition = Vector2.new(
+    local ClosestDistance = math.huge
+    local ClosestTarget = nil
+
+    local camera = workspace.CurrentCamera
+    local screenCenter = Vector2.new(
         game:GetService("GuiService"):GetScreenResolution().X / 2,
         game:GetService("GuiService"):GetScreenResolution().Y / 2
     )
 
-    for _, Player in ipairs(game:GetService("Players"):GetPlayers()) do
-        if Player ~= LocalPlayer then
-            local Character = Player.Character
-            if Character and Character:FindFirstChild("HumanoidRootPart") and Character.Humanoid.Health > 0 then
-                local Position, IsVisibleOnViewport =
-                    game:GetService("Workspace").CurrentCamera:WorldToViewportPoint(Character.HumanoidRootPart.Position)
+    -- 🔹 CHECK PLAYERS
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            local char = player.Character
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+            local hum = char and char:FindFirstChild("Humanoid")
 
-                if IsVisibleOnViewport then
-                    local Distance = (CenterPosition - Vector2.new(Position.X, Position.Y)).Magnitude
-                    if Distance < ClosestDistance then
-                        ClosestPlayer = Character.HumanoidRootPart
-                        ClosestDistance = Distance
+            if hrp and hum and hum.Health > 0 then
+                local pos, visible = camera:WorldToViewportPoint(hrp.Position)
+
+                if visible then
+                    local dist = (screenCenter - Vector2.new(pos.X, pos.Y)).Magnitude
+                    if dist < ClosestDistance then
+                        ClosestDistance = dist
+                        ClosestTarget = hrp
                     end
                 end
             end
         end
     end
 
-    return ClosestPlayer
+    -- 🔹 CHECK NPCs (THIS IS THE NEW PART)
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("Model") and not Players:GetPlayerFromCharacter(obj) then
+            local hum = obj:FindFirstChild("Humanoid")
+            local hrp = obj:FindFirstChild("HumanoidRootPart")
+
+            if hum and hrp and hum.Health > 0 then
+                local pos, visible = camera:WorldToViewportPoint(hrp.Position)
+
+                if visible then
+                    local dist = (screenCenter - Vector2.new(pos.X, pos.Y)).Magnitude
+                    if dist < ClosestDistance then
+                        ClosestDistance = dist
+                        ClosestTarget = hrp
+                    end
+                end
+            end
+        end
+    end
+
+    return ClosestTarget
 end
 
 local PlayerData = {}
@@ -307,52 +333,11 @@ RunService.Heartbeat:Connect(function()
 	end
 
 	-- 🎯 camlock
-function FindNearestEnemy()
-    local ClosestDistance = math.huge
-    local ClosestTarget = nil
-
-    local camera = workspace.CurrentCamera
-    local center = Vector2.new(
-        game:GetService("GuiService"):GetScreenResolution().X / 2,
-        game:GetService("GuiService"):GetScreenResolution().Y / 2
-    )
-
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        
-        -- 🔹 Check if it's a character (player OR NPC)
-        if obj:IsA("Model") then
-            local hum = obj:FindFirstChildOfClass("Humanoid")
-            
-            if hum and hum.Health > 0 then
-                
-                -- ❌ skip yourself
-                if obj == LocalPlayer.Character then
-                    continue
-                end
-
-                -- 🔥 support ALL rigs (THIS is the real fix)
-                local part = obj:FindFirstChild("HumanoidRootPart")
-                    or obj:FindFirstChild("UpperTorso")
-                    or obj:FindFirstChild("Torso")
-                    or obj:FindFirstChild("Head")
-
-                if part then
-                    local pos, visible = camera:WorldToViewportPoint(part.Position)
-
-                    if visible then
-                        local dist = (center - Vector2.new(pos.X, pos.Y)).Magnitude
-                        if dist < ClosestDistance then
-                            ClosestDistance = dist
-                            ClosestTarget = part
-                        end
-                    end
-                end
-            end
-        end
-    end
-
-    return ClosestTarget
-end
+local camera = workspace.CurrentCamera
+camera.CFrame = CFrame.new(
+camera.CFrame.Position,
+enemy.Position + velocity * Prediction
+)
 end)
 
 local ResolverEnabled = false
