@@ -1,0 +1,260 @@
+-- MACRO GUI (clean version)
+local enabled = false
+local running = false
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+
+local function macroLoop()
+	if running then return end
+	running = true
+
+	task.spawn(function()
+		while running do
+			if not enabled then
+				task.wait(0.2)
+				continue
+			end
+
+			local char = player.Character
+			local hum = char and char:FindFirstChildOfClass("Humanoid")
+
+			if not char or not hum then
+				task.wait(0.2)
+				continue
+			end
+
+			-- TOOL ACTION
+			local tool = getTool()
+			if tool then
+				hum:EquipTool(tool)
+			end
+
+			task.wait(0.15)
+
+			-- EMOTE
+			pcall(function()
+				playEmote()
+			end)
+
+			task.wait(0.5)
+
+			-- UNEQUIP
+			if hum then
+				hum:UnequipTools()
+			end
+
+			task.wait(0.4)
+		end
+	end)
+end
+
+-- SETTINGS
+local EMOTE_ID = 15610015346
+local EMOTE_NAME = "Yungblud Happier Jump"
+
+local enabled = false
+local faceConn = nil
+
+-- get any tool in backpack
+local function getTool()
+	local backpack = player:FindFirstChild("Backpack")
+	if not backpack then return nil end
+
+	for _, v in pairs(backpack:GetChildren()) do
+		if v:IsA("Tool") then
+			-- must have Handle (real weapon/tools usually do)
+			local hasHandle = v:FindFirstChild("Handle")
+
+			-- must NOT be your resolver tool
+			if hasHandle and v.Name ~= "Resolver" then
+				return v
+			end
+		end
+	end
+
+	return nil
+end
+
+-- play emote (fixes “only works once” issue)
+local function playEmote()
+local char = player.Character
+if not char then return end
+
+local hum = char:FindFirstChildOfClass("Humanoid")  
+if not hum then return end  
+
+if hum.RigType ~= Enum.HumanoidRigType.R15 then return end  
+
+local desc = hum:FindFirstChildOfClass("HumanoidDescription")  
+if not desc then  
+	desc = Instance.new("HumanoidDescription")  
+	desc.Parent = hum  
+end  
+
+pcall(function()  
+	desc:AddEmote(EMOTE_NAME, EMOTE_ID)  
+end)  
+
+task.wait(0.1)  
+
+pcall(function()  
+	hum:PlayEmote(EMOTE_NAME)  
+end)
+
+end
+
+-- equip + unequip tool
+local function toolCycle()
+local char = player.Character
+if not char then return end
+
+local hum = char:FindFirstChildOfClass("Humanoid")  
+if not hum then return end  
+
+local tool = getTool()  
+if not tool then return end  
+
+hum:EquipTool(tool)  
+task.wait(0.15)  
+hum:UnequipTools()
+
+end
+
+-- face forward loop
+local lastUpdate = 0
+
+local function faceForward()
+local char = player.Character
+if not char then return end
+
+local hrp = char:FindFirstChild("HumanoidRootPart")
+local cam = workspace.CurrentCamera
+if not hrp or not cam then return end
+
+if time() - lastUpdate < 0.03 then return end -- smoother than 0.08
+lastUpdate = time()
+
+local look = cam.CFrame.LookVector
+local flat = Vector3.new(look.X, 0, look.Z)
+
+if flat.Magnitude > 0 then
+flat = flat.Unit
+hrp.CFrame = CFrame.new(hrp.Position, hrp.Position + flat)
+end
+
+end
+
+-- GUI
+
+-- UI (clean floating orb style - no icon)
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "MacroGui"
+gui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+gui.ResetOnSpawn = false
+
+local button = Instance.new("TextButton")
+button.Size = UDim2.new(0, 70, 0, 40) -- smaller + wider for text
+button.Position = UDim2.new(0.85, 0, 0.5, 0)
+button.AnchorPoint = Vector2.new(0.5, 0.5)
+
+button.Text = "VASCAL OFF"
+button.Font = Enum.Font.GothamBold
+button.TextSize = 10
+button.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+button.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+button.AutoButtonColor = false
+button.Parent = gui
+
+-- rounded clean pill style
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 12)
+corner.Parent = button
+
+-- subtle glow stroke
+local stroke = Instance.new("UIStroke")
+stroke.Thickness = 1
+stroke.Transparency = 0.6
+stroke.Color = Color3.fromRGB(180, 80, 255)
+stroke.Parent = button
+
+-- hover effect
+button.MouseEnter:Connect(function()
+	button:TweenSize(UDim2.new(0, 75, 0, 43), "Out", "Quad", 0.1, true)
+end)
+
+button.MouseLeave:Connect(function()
+	button:TweenSize(UDim2.new(0, 70, 0, 40), "Out", "Quad", 0.1, true)
+end)
+
+-- 🔥 DRAG SYSTEM (mobile + PC fixed)
+local dragging = false
+local dragInput, startPos, startMouse
+
+button.InputBegan:Connect(function(input)
+if input.UserInputType == Enum.UserInputType.MouseButton1
+or input.UserInputType == Enum.UserInputType.Touch then
+
+dragging = true  
+	startMouse = input.Position  
+	startPos = button.Position  
+
+	input.Changed:Connect(function()  
+		if input.UserInputState == Enum.UserInputState.End then  
+			dragging = false  
+		end  
+	end)  
+end
+
+end)
+
+button.InputChanged:Connect(function(input)
+if input.UserInputType == Enum.UserInputType.MouseMovement
+or input.UserInputType == Enum.UserInputType.Touch then
+dragInput = input
+end
+end)
+
+game:GetService("UserInputService").InputChanged:Connect(function(input)
+if dragging and input == dragInput then
+local delta = input.Position - startMouse
+
+button.Position = UDim2.new(  
+		startPos.X.Scale,  
+		startPos.X.Offset + delta.X,  
+		startPos.Y.Scale,  
+		startPos.Y.Offset + delta.Y  
+	)  
+end
+
+end)
+
+button.MouseButton1Click:Connect(function()
+	enabled = not enabled
+
+	if enabled then
+		button.Text = "VASCAL M ON"
+
+		-- run once on toggle ON
+		playEmote()
+		toolCycle()
+
+		-- face loop
+		faceConn = RunService.RenderStepped:Connect(function()
+			if enabled then
+				faceForward()
+			end
+		end)
+	else
+		button.Text = "VASCAL M OFF"
+
+		if faceConn then
+			faceConn:Disconnect()
+			faceConn = nil
+		end
+
+	end
+end)
