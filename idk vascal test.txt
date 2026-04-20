@@ -307,14 +307,9 @@ RunService.Heartbeat:Connect(function()
 	end
 
 	-- 🎯 camlock
-local camera = workspace.CurrentCamera
-camera.CFrame = CFrame.new(
-camera.CFrame.Position,
-enemy.Position + velocity * Prediction
-)
-function FindNearestNPC()
+function FindNearestEnemy()
     local ClosestDistance = math.huge
-    local ClosestNPC = nil
+    local ClosestTarget = nil
 
     local camera = workspace.CurrentCamera
     local center = Vector2.new(
@@ -323,16 +318,23 @@ function FindNearestNPC()
     )
 
     for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj:IsA("Model") and not Players:GetPlayerFromCharacter(obj) then
-            
+        
+        -- 🔹 Check if it's a character (player OR NPC)
+        if obj:IsA("Model") then
             local hum = obj:FindFirstChildOfClass("Humanoid")
+            
             if hum and hum.Health > 0 then
+                
+                -- ❌ skip yourself
+                if obj == LocalPlayer.Character then
+                    continue
+                end
 
-                -- 🔥 SUPPORT ALL RIG TYPES
+                -- 🔥 support ALL rigs (THIS is the real fix)
                 local part = obj:FindFirstChild("HumanoidRootPart")
                     or obj:FindFirstChild("UpperTorso")
                     or obj:FindFirstChild("Torso")
-                    or obj:FindFirstChildWhichIsA("BasePart")
+                    or obj:FindFirstChild("Head")
 
                 if part then
                     local pos, visible = camera:WorldToViewportPoint(part.Position)
@@ -341,7 +343,7 @@ function FindNearestNPC()
                         local dist = (center - Vector2.new(pos.X, pos.Y)).Magnitude
                         if dist < ClosestDistance then
                             ClosestDistance = dist
-                            ClosestNPC = part
+                            ClosestTarget = part
                         end
                     end
                 end
@@ -349,7 +351,7 @@ function FindNearestNPC()
         end
     end
 
-    return ClosestNPC
+    return ClosestTarget
 end
 end)
 
