@@ -307,12 +307,59 @@ RunService.Heartbeat:Connect(function()
 	end
 
 	-- 🎯 camlock
-local camera = workspace.CurrentCamera
-camera.CFrame = CFrame.new(
-camera.CFrame.Position,
-enemy.Position + velocity * Prediction
-)
-end)
+function FindNearestEnemy()
+    local ClosestDistance = math.huge
+    local ClosestTarget = nil
+
+    local camera = workspace.CurrentCamera
+    local screenCenter = Vector2.new(
+        game:GetService("GuiService"):GetScreenResolution().X / 2,
+        game:GetService("GuiService"):GetScreenResolution().Y / 2
+    )
+
+    -- 🔹 CHECK PLAYERS
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            local char = player.Character
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+            local hum = char and char:FindFirstChild("Humanoid")
+
+            if hrp and hum and hum.Health > 0 then
+                local pos, visible = camera:WorldToViewportPoint(hrp.Position)
+
+                if visible then
+                    local dist = (screenCenter - Vector2.new(pos.X, pos.Y)).Magnitude
+                    if dist < ClosestDistance then
+                        ClosestDistance = dist
+                        ClosestTarget = hrp
+                    end
+                end
+            end
+        end
+    end
+
+    -- 🔹 CHECK NPCs (THIS IS THE NEW PART)
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("Model") and not Players:GetPlayerFromCharacter(obj) then
+            local hum = obj:FindFirstChild("Humanoid")
+            local hrp = obj:FindFirstChild("HumanoidRootPart")
+
+            if hum and hrp and hum.Health > 0 then
+                local pos, visible = camera:WorldToViewportPoint(hrp.Position)
+
+                if visible then
+                    local dist = (screenCenter - Vector2.new(pos.X, pos.Y)).Magnitude
+                    if dist < ClosestDistance then
+                        ClosestDistance = dist
+                        ClosestTarget = hrp
+                    end
+                end
+            end
+        end
+    end
+
+    return ClosestTarget
+end
 
 local ResolverEnabled = false
 
