@@ -808,39 +808,72 @@ ToggleBtn.MouseButton1Click:Connect(function()
 end)
 
 -- PREDICTION BASED ON PING
+local CurrentPrediction = Prediction
+
+local PredTable = {
+	[20] = 0.12588,
+	[30] = 0.11,
+	[40] = 0.125,
+	[50] = 0.127668,
+	[60] = 0.12731,
+	[70] = 0.119,
+	[80] = 0.1347,
+	[90] = 0.136,
+	[100] = 0.13034,
+	[110] = 0.1455,
+	[120] = 0.14376,
+	[130] = 0.156692,
+	[140] = 0.1223333,
+	[150] = 0.15,
+	[160] = 0.16,
+	[170] = 0.1923111,
+	[180] = 0.19284,
+	[190] = 0.166547,
+	[200] = 0.16942,
+	[210] = 0.165566,
+	[220] = 0.165566,
+	[230] = 0.15692,
+	[240] = 0.16780,
+	[250] = 0.1651,
+	[260] = 0.175566,
+	[270] = 0.195566,
+	[280] = 0.16780,
+	[300] = 0.284638
+}
+
 local function getPredictionFromPing(ping)
-	if ping < 40 then
-		return 0.12
-	elseif ping < 70 then
-		return 0.135
-	elseif ping < 100 then
-		return 0.145
-	elseif ping < 130 then
-		return 0.155
-	elseif ping < 160 then
-		return 0.165
-	elseif ping < 200 then
-		return 0.175
-	else
-		return 0.19
+	local closest = nil
+	local diff = math.huge
+
+	for k, v in pairs(PredTable) do
+		local d = math.abs(ping - k)
+		if d < diff then
+			diff = d
+			closest = v
+		end
 	end
+
+	return closest or 0.15
 end
 
 -- UPDATE LOOP
 task.spawn(function()
 	while true do
 		local pingStr = Stats.Network.ServerStatsItem["Data Ping"]:GetValueString()
-		local ping = tonumber(string.split(pingStr, " ")[1]) or 0
+		local ping = tonumber(string.match(pingStr, "%d+")) or 0
 		
-		-- always show ping
 		PingLabel.Text = "Ping: "..ping.."ms"
 		
-		-- only apply prediction if enabled
 		if AutoPredEnabled then
-			Prediction = getPredictionFromPing(ping)
+			local targetPred = getPredictionFromPing(ping)
+
+			-- 🔥 SMOOTH TRANSITION (no snapping)
+			CurrentPrediction = CurrentPrediction + (targetPred - CurrentPrediction) * 0.2
+			
+			Prediction = CurrentPrediction
 		end
 		
-		task.wait(0.5)
+		task.wait(0.1)
 	end
 end)
 
